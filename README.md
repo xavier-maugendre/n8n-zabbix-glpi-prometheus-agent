@@ -146,7 +146,7 @@ zabbix_url    → {$ZABBIX.URL}/tr_events.php?triggerid={TRIGGER.ID}&eventid={EV
 
 - Le workflow est livré avec `"active": false` — à activer manuellement après configuration
 - L'IA utilise Gemini avec `temperature: 0.1` pour des diagnostics déterministes
-- Testé sur Zabbix 6.4 et GLPI 10.x
+- Testé sur Zabbix 7.4 et GLPI 10.x
 
 ---
 
