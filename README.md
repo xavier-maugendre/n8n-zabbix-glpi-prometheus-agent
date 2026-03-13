@@ -1,4 +1,4 @@
-# 🤖 Agent SRE Autonome — Zabbix + n8n + IA
+# 🤖 Agent SRE Autonome — Zabbix + n8n + Prometheus + IA
 
 > Détection → Diagnostic IA → Ticket GLPI → Auto-remédiation. Cycle complet, zéro intervention manuelle.
 
