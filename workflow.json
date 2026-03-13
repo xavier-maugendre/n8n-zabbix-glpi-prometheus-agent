@@ -1,0 +1,481 @@
+{
+  "name": "Agent SRE Autonome — Zabbix + Prometheus + GLPI + IA",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## GLPI\nRécupération Token",
+        "height": 336,
+        "width": 448,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [-336, -416],
+      "typeVersion": 1,
+      "id": "a4e199ab-ed3f-42dc-90b8-506a96690959",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Loki & Zabbix\nRécupération des logs, métriques et Transformation",
+        "height": 336,
+        "width": 608,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [128, -416],
+      "typeVersion": 1,
+      "id": "c0b3ec33-2e91-449e-bf99-6a12a74cc232",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Prometheus\nRécupération des métriques et transformation",
+        "height": 336,
+        "width": 400,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [752, -416],
+      "typeVersion": 1,
+      "id": "08f96e0c-8da7-42b6-a1e3-8bf2e1892d80",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Analyse IA\nCorrélation log et métrique Zabbix",
+        "height": 480,
+        "width": 384,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [1168, -416],
+      "typeVersion": 1,
+      "id": "5aa7e206-ece3-463c-9104-3601971162f4",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## GLPI\nCréation Automatique du Ticket & acquittement de l'évènement sur Zabbix + Commentaire Numéro de ticket",
+        "height": 336,
+        "width": 512,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [1568, -416],
+      "typeVersion": 1,
+      "id": "a741d7eb-ff93-47d4-9694-0444cc99f5af",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## GLPI\nClôture Automatique du ticket",
+        "height": 336,
+        "width": 1152
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [-336, 96],
+      "typeVersion": 1,
+      "id": "23cdef3c-766b-493b-93aa-e43619e9408c",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "YOUR-WEBHOOK-UUID",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-720, -32],
+      "id": "da701f1d-c549-4461-933f-a393ad3ee6bc",
+      "name": "Webhook",
+      "webhookId": "YOUR-WEBHOOK-UUID",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_HEADER_AUTH_CREDENTIAL_ID",
+          "name": "Header - Zabbix Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "14a17986-af52-42f5-b54d-4f2623538317",
+              "leftValue": "={{ $json.body.status }}",
+              "rightValue": "PROBLEM",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-496, -32],
+      "id": "2bf2715c-19b5-406c-819f-c6a37699548a",
+      "name": "PROBLEM OR RESOLVED"
+    },
+    {
+      "parameters": {
+        "url": "http://YOUR_GLPI_HOST:8088/apirest.php/initSession",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "App-Token", "value": "YOUR_GLPI_APP_TOKEN" },
+            { "name": "Authorization", "value": "user_token YOUR_GLPI_USER_TOKEN" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1f620a4-338a-4ffe-b6ca-11f79c78da93",
+      "name": "Get Token GLPI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [-272, -304]
+    },
+    {
+      "parameters": {
+        "url": "http://YOUR_GLPI_HOST:8088/apirest.php/search/Computer/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "criteria[0][field]", "value": "1" },
+            { "name": "criteria[0][searchtype]", "value": "contains" },
+            { "name": "criteria[0][value]", "value": "={{ $('Webhook').item.json.body.host }}" },
+            { "name": "forcedisplay[0]", "value": "2" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "App-Token", "value": "YOUR_GLPI_APP_TOKEN" },
+            { "name": "Authorization", "value": "user_token YOUR_GLPI_USER_TOKEN" },
+            { "name": "Session-Token", "value": "={{ $json.session_token }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3f186d11-9506-44f5-8e7e-b10ed51e4122",
+      "name": "Recherche ID",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [-48, -304]
+    },
+    {
+      "parameters": {
+        "url": "http://YOUR_LOKI_HOST:3100/loki/api/v1/query_range",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "query", "value": "={host=\"{{ $node[\"Webhook\"].json[\"body\"][\"host\"] }}\"}" },
+            { "name": "limit", "value": "50" },
+            { "name": "start", "value": "={{ (Math.floor(Date.now() / 1000) - 300) * 1000000000 }}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [176, -304],
+      "id": "4ee0031c-5b5e-4132-93e6-77e07f3b3adb",
+      "name": "Loki Get Log"
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.first().json.data.result;\nlet textePourIA = \"Logs trouvés dans Loki :\\n\";\n\nresult.forEach(stream => {\n  stream.values.forEach(val => {\n    textePourIA += `- ${val[1]}\\n`;\n  });\n});\n\nreturn { logs_formates: textePourIA };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, -304],
+      "id": "aff0be23-44e4-4d29-9743-77887c4fd144",
+      "name": "Tranformation Log"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_ZABBIX_HOST/api_jsonrpc.php",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "zabbixApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"item.get\",\n    \"params\": {\n        \"output\": [\"name\", \"key_\", \"lastvalue\", \"units\"],\n        \"hostids\": \"{{ $('Webhook').item.json.body.host_id }}\",\n        \"filter\": { \"status\": \"0\" },\n        \"sortfield\": \"name\"\n    },\n   \"id\": 1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [592, -304],
+      "id": "2c44a0b7-7e18-4e26-96a3-c7442344e0be",
+      "name": "Zabbix Get Metrics",
+      "credentials": {
+        "zabbixApi": {
+          "id": "YOUR_ZABBIX_CREDENTIAL_ID",
+          "name": "Zabbix account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "http://YOUR_PROMETHEUS_HOST:9090/api/v1/query",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "=label_replace(100 - (avg by (hostname) (rate(node_cpu_seconds_total{mode=\"idle\",hostname=\"{{ $('Webhook').item.json.body.host }}\"}[5m])) * 100), \"metric\", \"cpu_percent\", \"\", \"\")\nor\nlabel_replace((1 - node_memory_MemAvailable_bytes{hostname=\"{{ $('Webhook').item.json.body.host }}\"} / node_memory_MemTotal_bytes{hostname=\"{{ $('Webhook').item.json.body.host }}\"}) * 100, \"metric\", \"ram_percent\", \"\", \"\")\nor\nlabel_replace(100 - (node_filesystem_avail_bytes{hostname=\"{{ $('Webhook').item.json.body.host }}\",mountpoint=\"/\"} / node_filesystem_size_bytes{hostname=\"{{ $('Webhook').item.json.body.host }}\",mountpoint=\"/\"} * 100), \"metric\", \"disk_percent\", \"\", \"\")\nor\nlabel_replace(topk(3, sum by (name) (rate(container_cpu_usage_seconds_total{name!=\"\", hostname=\"{{ $('Webhook').item.json.body.host }}\"}[5m])) * 100), \"metric\", \"top_container_cpu_percent\", \"\", \"\")\nor\nlabel_replace(topk(3, sum by (name) (container_memory_working_set_bytes{name!=\"\", hostname=\"{{ $('Webhook').item.json.body.host }}\"}) / 1024 / 1024), \"metric\", \"top_container_ram_mb\", \"\", \"\")"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [800, -304],
+      "id": "5e783dd7-79c2-4967-ae66-b7f93122312d",
+      "name": "Prometheus Get Metrics"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = $input.first().json.data.result;\nlet promMetrics = \"📈 Métriques Système (Hôte + Top Conteneurs) :\\n\";\n\nif (!results || results.length === 0) {\n  return { prometheus_formate: \"⚠️ Aucune métrique système Prometheus disponible.\" };\n}\n\nresults.forEach(item => {\n  const metricName = item.metric.metric || item.metric.__name__ || \"Métrique Inconnue\";\n  const containerLabel = item.metric.name || item.metric.container || item.metric.container_name || item.metric.id;\n  const containerName = containerLabel ? ` [Conteneur: ${containerLabel}]` : \"\";\n  const metricValue = parseFloat(item.value[1]).toFixed(2);\n  let unit = \"\";\n  if (metricName.includes(\"percent\")) unit = \"%\";\n  else if (metricName.includes(\"bytes_per_sec\")) unit = \" Octets/s\";\n  else if (metricName.includes(\"ram_mb\")) unit = \" MB\";\n  promMetrics += `- ${metricName}${containerName} : ${metricValue}${unit}\\n`;\n});\n\nreturn { prometheus_formate: promMetrics };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1008, -304],
+      "id": "5dd066b9-0400-4628-94c8-5003c1652a26",
+      "name": "Transformation Prometheus"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "==Tu es un Expert SRE (Site Reliability Engineer) responsable de la supervision d'une infrastructure critique.\nTon rôle est de diagnostiquer la cause racine d'un incident en croisant plusieurs sources d'information : L'Alerte, les Métriques (Zabbix & Prometheus) et les Logs.\n\n---\n🔴 1. LE DÉCLENCHEUR (L'Alerte Zabbix)\n- Nom de l'alerte : {{ $('Webhook').item.json.body.alert }}\n- Sévérité : {{ $('Webhook').item.json.body.severity }}\n- Serveur concerné : {{ $('Webhook').item.json.body.host }} ({{ $('Webhook').item.json.body.ip }})\n\n---\n📊 2. LES SIGNES VITAUX (Métriques Globales Zabbix)\n{{ JSON.stringify($('Zabbix Get Metrics').item.json.result) }}\n\n---\n🐳 3. MÉTRIQUES SYSTÈME & CONTENEURS (Prometheus / cAdvisor)\n{{ $('Transformation Prometheus').item.json.prometheus_formate ? $('Transformation Prometheus').item.json.prometheus_formate : \"⚠️ Aucune métrique Prometheus disponible.\" }}\n\n---\n📜 4. LES PREUVES (Logs Système - Dernières 5 min)\n{{ $('Tranformation Log').item.json.logs_formates ? $('Tranformation Log').item.json.logs_formates : \"⚠️ Aucun log pertinent retourné par Loki.\" }}\n\n---\n🧠 TA DÉMARCHE D'ANALYSE :\n1. Qualification de l'Alerte\n2. Corrélation Zabbix & Prometheus\n3. Corrélation Logs\n\n👉 SORTIE ATTENDUE :\n- Constat & Responsable\n- Analyse Logs\n- Hypothèse & Action",
+        "options": {
+          "systemMessage": "Tu es un Expert SRE Senior. Sois concis, technique et professionnel. Réponds TOUJOURS en Français. Ne jamais inventer de logs ou métriques. Base ton diagnostic sur les chiffres."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [1264, -304],
+      "id": "c7ebbe03-0a88-42ee-826b-9ca927b6efb2",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": { "temperature": 0.1 }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [1264, -80],
+      "id": "c208d43a-0893-429c-b1f0-e99126ae986d",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_GEMINI_CREDENTIAL_ID",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_GLPI_HOST:8088/apirest.php/Ticket/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "App-Token", "value": "YOUR_GLPI_APP_TOKEN" },
+            { "name": "Authorization", "value": "user_token YOUR_GLPI_USER_TOKEN" },
+            { "name": "Session-Token", "value": "={{ $('Get Token GLPI').item.json.session_token }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input\": [\n    {\n      \"name\": {{ JSON.stringify(\"[ID:\" + $('Webhook').item.json.body.event_id + \"] \" + $('Webhook').item.json.body.alert) }},\n      \"content\": {{ JSON.stringify(\"⚠️ Alerte Zabbix ⚠️\\n\\nServeur : \" + $('Webhook').item.json.body.host + \"\\nIP : \" + $('Webhook').item.json.body.ip + \"\\nSévérité : \" + $('Webhook').item.json.body.severity + \"\\n\\n--- 🤖 DIAGNOSTIC IA ---\\n\" + $('AI Agent').item.json.output + \"\\n\\nLien Zabbix : \" + $('Webhook').item.json.body.zabbix_url) }},\n      \"urgency\": \"3\",\n      \"items_id\": {\"Computer\": [\"{{ $('Recherche ID').item.json.data[0]['2'] }}\"]}\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "a2abbe5d-35be-4c4c-9cf0-866887cd0238",
+      "name": "Création de ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1616, -304]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_ZABBIX_HOST/api_jsonrpc.php",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "zabbixApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n   \"jsonrpc\": \"2.0\",\n   \"method\": \"event.acknowledge\",\n   \"params\": {\n       \"eventids\": \"{{ $('Webhook').item.json.body.event_id }}\",\n       \"action\": 6,\n       \"message\": \"Ticket GLPI créé : #{{ $json.id }}\"\n   },\n   \"id\": 1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1840, -304],
+      "id": "3ece5f64-8bb6-457a-828a-88b61a7662a1",
+      "name": "Zabbix Acquittement",
+      "credentials": {
+        "zabbixApi": {
+          "id": "YOUR_ZABBIX_CREDENTIAL_ID",
+          "name": "Zabbix account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "http://YOUR_GLPI_HOST:8088/apirest.php/initSession",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "App-Token", "value": "YOUR_GLPI_APP_TOKEN" },
+            { "name": "Authorization", "value": "user_token YOUR_GLPI_USER_TOKEN" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e7a4af36-e9b6-44c8-96ea-a90c92837313",
+      "name": "Get Token GLPI1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [-272, 192]
+    },
+    {
+      "parameters": {
+        "url": "http://YOUR_GLPI_HOST:8088/apirest.php/search/Ticket/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "criteria[0][field]", "value": "1" },
+            { "name": "criteria[0][searchtype]", "value": "contains" },
+            { "name": "criteria[0][value]", "value": "=[ID:{{ $('Webhook').item.json.body.event_id }}]" },
+            { "name": "criteria[1][link]", "value": "AND" },
+            { "name": "criteria[1][field]", "value": "12" },
+            { "name": "criteria[1][searchtype]", "value": "equals" },
+            { "name": "criteria[1][value]", "value": "1" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "App-Token", "value": "YOUR_GLPI_APP_TOKEN" },
+            { "name": "Authorization", "value": "user_token YOUR_GLPI_USER_TOKEN" },
+            { "name": "Session-Token", "value": "={{ $json.session_token }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "51a2cd36-4de3-4a20-9bee-493445cc49d1",
+      "name": "Recherche ID Ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [-48, 192]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "conditions": [
+            {
+              "id": "88532857-d9ce-49e5-a2af-a5fbd41cc72f",
+              "leftValue": "={{ $('Recherche ID Ticket').item.json.totalcount }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [176, 192],
+      "id": "ba2cabeb-7608-42d8-963a-5f300df1881f",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://YOUR_GLPI_HOST:8088/apirest.php/ITILSolution/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "App-Token", "value": "YOUR_GLPI_APP_TOKEN" },
+            { "name": "Authorization", "value": "user_token YOUR_GLPI_USER_TOKEN" },
+            { "name": "Session-Token", "value": "={{ $('Get Token GLPI1').item.json.session_token }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input\": {\n    \"items_id\": \"{{ $('Recherche ID Ticket').item.json.data[0]['2'] }}\",\n    \"itemtype\": \"Ticket\",\n    \"content\": \"✅ RÉSOLU : Alerte terminée. Clôture automatique.\",\n    \"solutiontypes_id\": 1\n  }\n}",
+        "options": {}
+      },
+      "id": "3fda67a5-d0a5-4134-abd7-5e022c7275b0",
+      "name": "SOLUTION de ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [400, 192]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://YOUR_GLPI_HOST:8088/apirest.php/Ticket/{{ $('Recherche ID Ticket').item.json.data[0]['2'] }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "App-Token", "value": "YOUR_GLPI_APP_TOKEN" },
+            { "name": "Authorization", "value": "user_token YOUR_GLPI_USER_TOKEN" },
+            { "name": "Session-Token", "value": "={{ $('Get Token GLPI1').item.json.session_token }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input\": {\n    \"status\": 6\n  }\n}",
+        "options": {}
+      },
+      "id": "3b177d83-95da-4319-94f8-0c795fe1199e",
+      "name": "CLOSE de ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [624, 192]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "PROBLEM OR RESOLVED", "type": "main", "index": 0 }]] },
+    "PROBLEM OR RESOLVED": {
+      "main": [
+        [{ "node": "Get Token GLPI", "type": "main", "index": 0 }],
+        [{ "node": "Get Token GLPI1", "type": "main", "index": 0 }]
+      ]
+    },
+    "Get Token GLPI": { "main": [[{ "node": "Recherche ID", "type": "main", "index": 0 }]] },
+    "Recherche ID": { "main": [[{ "node": "Loki Get Log", "type": "main", "index": 0 }]] },
+    "Loki Get Log": { "main": [[{ "node": "Tranformation Log", "type": "main", "index": 0 }]] },
+    "Tranformation Log": { "main": [[{ "node": "Zabbix Get Metrics", "type": "main", "index": 0 }]] },
+    "Zabbix Get Metrics": { "main": [[{ "node": "Prometheus Get Metrics", "type": "main", "index": 0 }]] },
+    "Prometheus Get Metrics": { "main": [[{ "node": "Transformation Prometheus", "type": "main", "index": 0 }]] },
+    "Transformation Prometheus": { "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]] },
+    "AI Agent": { "main": [[{ "node": "Création de ticket", "type": "main", "index": 0 }]] },
+    "Google Gemini Chat Model": { "ai_languageModel": [[{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]] },
+    "Création de ticket": { "main": [[{ "node": "Zabbix Acquittement", "type": "main", "index": 0 }]] },
+    "Get Token GLPI1": { "main": [[{ "node": "Recherche ID Ticket", "type": "main", "index": 0 }]] },
+    "Recherche ID Ticket": { "main": [[{ "node": "If", "type": "main", "index": 0 }]] },
+    "If": { "main": [[{ "node": "SOLUTION de ticket", "type": "main", "index": 0 }]] },
+    "SOLUTION de ticket": { "main": [[{ "node": "CLOSE de ticket", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "instanceId": "YOUR_N8N_INSTANCE_ID" }
+}
